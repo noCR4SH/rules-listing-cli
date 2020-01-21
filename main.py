@@ -1,4 +1,4 @@
-import http.client
+import requests
 import json
 from dotenv import load_dotenv, find_dotenv
 from os import environ as env
@@ -7,20 +7,24 @@ import constants
 
 def get_token(client_id, client_secret, audience, domain):
 
-    conn = http.client.HTTPSConnection(domain)
-
-    payload = {'client_id': client_id, 'client_secret': client_secret, 'audience': audience, "grant_type": "client_credentials" }
-    json_data = json.dumps(payload)
-
     headers = { 'content-type': "application/json" }
+    data = { 'client_id': client_id, 'client_secret': client_secret, 'audience': audience, "grant_type": "client_credentials" }
+    
+    response = requests.post("https://" + domain + "/oauth/token", json=data, headers=headers)
+    
+    json_response = response.json()
+    print(json_response)
 
-    conn.request("POST", "/oauth/token", json_data, headers)
+    return json_response
 
-    res = conn.getresponse()
-    data = res.read()
-    dict_res = json.loads(data)
+def get_rules(access_token, audience):
+    
+    headers = { 'authorization': access_token["token_type"] + " " + access_token["access_token"] }
 
-    return dict_res
+    response = requests.get(audience + "rules", headers=headers)
+
+    json_response = response.json()
+    print(json_response)
 
 if __name__ == "__main__":
 
@@ -34,5 +38,5 @@ if __name__ == "__main__":
     AUTH0_AUDIENCE = env.get(constants.AUTH0_AUDIENCE)
 
     bearer_token = get_token(AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, AUTH0_AUDIENCE, AUTH0_DOMAIN)
-
-    print(bearer_token)
+    
+    get_rules(bearer_token, AUTH0_AUDIENCE)
